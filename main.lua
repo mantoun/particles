@@ -3,14 +3,16 @@ local particles = require 'particles'
 math.randomseed(os.time())
 
 function love.load()
-  particles.init(10)
-  --particles.new_particle()
+  ps = particles.new_system(3)
+  --ps2 = particles.new_system(4)
 end
 
 function love.update(dt)
-  particles.update(dt)
+  ps.update(dt)
+  --ps2.update(dt)
 end
 
 function love.draw()
-  particles.draw()
+  ps.draw()
+  --ps2.draw()
 end
