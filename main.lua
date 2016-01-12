@@ -10,6 +10,7 @@ local debug_string = ""
 local debug_text = true      -- Whether to draw the controls on the screen
 local debug_interval = 1/10  -- Time between updates
 local debug_update_timer = 0
+local polarity = 1           -- Default polarity for attractor / repeller
 
 
 function love.load()
@@ -17,7 +18,11 @@ function love.load()
   controls = {{
     key="c",
     description="clear",
-    control=function() particles.systems = {}; particles.num_particles = 0 end
+    control=function()
+      particles.systems = {};
+      particles.repellers = {};
+      particles.num_particles = 0
+    end
   }, {
     key="m",
     description="increase rate",
@@ -31,6 +36,12 @@ function love.load()
       for _,v in ipairs(particles.systems) do
         v.rate = math.max(0, v.rate-10)
       end
+    end
+  }, {
+    key="r",
+    description="reverse polarity of attractor",
+    control=function()
+      polarity = polarity * -1
     end
   }, {
     key="p",
@@ -99,6 +110,6 @@ function love.mousepressed(x, y, button)
   if button==1 then
     ps = particles.new_system(x, y, 1000)
   elseif button==2 then
-    particles.new_repeller(x, y, 500000)
+    particles.new_repeller(x, y, polarity)
   end
 end

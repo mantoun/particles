@@ -124,12 +124,16 @@ function particles.new_system(x, y, max_particles)
   return ps
 end
 
-function particles.new_repeller(x, y, strength)
+function particles.new_repeller(x, y, polarity)
   local r = {}
-  local color = {255, 0, 0}
+  r.strength = 250000
+  r.polarity = polarity or -1
+  local red = {255, 0, 0}
+  local blue = {0, 0, 255}
   local size = 4
 
   function r.draw()
+    local color = (r.polarity==-1) and red or blue
     love.graphics.setColor(color)
     love.graphics.circle('fill', x, y, size)
   end
@@ -147,7 +151,7 @@ function particles.new_repeller(x, y, strength)
     mag = math.max(mag, 5)
     mag = math.min(mag, 100)
     -- Calculate and apply force
-    force = -1 * strength / mag^2;
+    force = r.polarity * r.strength / mag^2;
     dir.x = dir.x * force
     dir.y = dir.y * force
     return dir;
