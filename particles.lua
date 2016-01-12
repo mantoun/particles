@@ -2,16 +2,16 @@
 
 -- The module
 local particles = {}
-particles.num_particles = 0
+particles.num_particles = 0  -- Track the global number of particles
 
-function particles.new_system(max_particles)
+function particles.new_system(x, y, max_particles)
   -- Initialize and return a new particle system
   local rand = math.random
   
   local ps = {  -- The particle system
     rate = 60,  -- Emission rate in particles per second
-    timer = 0,  -- Emission timer. Emit particles every 1/rate seconds.
-    origin = {x=0, y=0},
+    timer = 0,  -- Emission timer. Emit particles every 1/rate seconds
+    origin = {x=x, y=y},
     particles = {}, -- Track all particles in the system
     color = nil,
   }
@@ -19,15 +19,16 @@ function particles.new_system(max_particles)
   function ps.new_particle()
     local p = {}  -- the particle
     local color = ps.color or {rand(0, 255), rand(0, 255), rand(0, 200), 255}
-    local location = {x=ps.origin.x, y=ps.origin.y}
+    local location = {x=x, y=y}
     local velocity = {x=rand(-200, 200), y=rand(-200, 200)}
     local acceleration = {x=rand(-200, 200), y=20}
-    local width = rand(2, 4)
+    local width = rand(1, 1)
     local size = {x=width, y=width}
     local lifespan = rand(1, 3)  -- lifespan in seconds
 
     function p.update(dt)
       -- Update the particle. Return true if it's still alive.
+      -- Reduce alpha based on lifespan.
       color[4] = color[4] - 255/lifespan * dt
       if color[4] <= 0 then
         return false
@@ -52,10 +53,14 @@ function particles.new_system(max_particles)
   function ps.update(dt)
     local dead = {}
     ps.timer = ps.timer + dt  -- Track the time since last emission
-    -- If the system isn't at max capacity, add another particle.
-    if table.getn(ps.particles) < max_particles then
+    -- If the system isn't at max capacity, add more particles.
+    if #ps.particles < max_particles then
       if ps.timer > 1/ps.rate then
-        ps.new_particle()
+        -- Compute how many particles to emit
+        local need = max_particles - #ps.particles
+        for i=1,math.min(need, math.ceil(ps.rate*dt)) do
+          ps.new_particle()
+        end
         ps.timer = 0
       end
     end
@@ -79,13 +84,14 @@ function particles.new_system(max_particles)
     end
   end
 
+  function ps.apply_force()
+  end
+
   -- Initialize the system with particles
   -- TODO: if one-shot
   --[[
   for i=1,max_particles do
-    local x = math.random() * 100
-    local y = math.random() * 100
-    ps.new_particle(x, y)
+    ps.new_particle()
   end
   --]]
 

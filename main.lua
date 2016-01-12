@@ -21,6 +21,18 @@ function love.load()
     description="clear",
     control=function() systems = {}; particles.num_particles = 0 end
   }, {
+    key="m",
+    description="increase rate",
+    control=function()
+      for _,v in ipairs(systems) do v.rate = v.rate + 10 end
+    end
+  }, {
+    key="n",
+    description="decrease rate",
+    control=function()
+      for _,v in ipairs(systems) do v.rate = math.max(0, v.rate-10) end
+    end
+  }, {
     key="q",
     description="quit",
     control=function() love.event.push("quit") end
@@ -69,14 +81,14 @@ function love.draw()
 end
 
 function love.keypressed(key, unicode)
-  -- Execute control function if a control's key is pressed
+  -- Handle keystrokes
   for i,v in ipairs(controls) do
     if key == v.key then v.control() end
   end
 end
 
 function love.mousepressed(x, y, button)
-  ps = particles.new_system(100)
+  ps = particles.new_system(x, y, 1000)
   ps.origin = {x=x, y=y}
   table.insert(systems, ps)
 end
