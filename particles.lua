@@ -3,7 +3,11 @@
 -- The module
 local particles = {
   num_particles = 0,  -- Track the global number of particles
-  systems = {}
+  systems = {},
+  forces = {
+    {x=0, y=100}  -- Gravity
+  },
+  repellers = {}
 }
 
 function particles.new_system(x, y, max_particles)
@@ -42,17 +46,32 @@ function particles.new_system(x, y, max_particles)
       if color[4] <= 0 then
         return false
       end
-      velocity.x = velocity.x + acceleration.x * dt
-      velocity.y = velocity.y + acceleration.y * dt
+
+      -- Apply forces to each particle
+      for _,f in ipairs(particles.forces) do
+        velocity.x = velocity.x + f.x * dt
+        velocity.y = velocity.y + f.y * dt
+      end
+      -- Apply repellers to each particle
+      for _,r in ipairs(particles.repellers) do
+        -- TODO: ref to p?
+        local acceleration = r.repel(location)
+        velocity.x = velocity.x + acceleration.x * dt
+        velocity.y = velocity.y + acceleration.y * dt
+      end
+      -- Update particle location
       location.x = location.x + velocity.x * dt
       location.y = location.y + velocity.y * dt
       return true
     end
+    -- TODO: particle mass
 
     function p.render()
       -- Draw the particle.
       love.graphics.setColor(color)
-      love.graphics.rectangle('fill', location.x, location.y, size.x, size.y)
+      --love.graphics.ellipse('fill', location.x, location.y, size.x, size.y)
+      --love.graphics.rectangle('fill', location.x, location.y, size.x, size.y)
+      love.graphics.circle('fill', location.x, location.y, size.x)
     end
 
     table.insert(ps.particles, p)  -- Register the particle with the system.
@@ -93,9 +112,6 @@ function particles.new_system(x, y, max_particles)
     end
   end
 
-  function ps.apply_force()
-  end
-
   -- Initialize the system with particles
   -- TODO: if one-shot
   --[[
@@ -106,6 +122,55 @@ function particles.new_system(x, y, max_particles)
 
   table.insert(particles.systems, ps)
   return ps
+end
+
+function particles.new_repeller(x, y, strength)
+  local r = {}
+  local color = {255, 0, 0}
+  local size = 4
+
+  function r.draw()
+    love.graphics.setColor(color)
+    love.graphics.circle('fill', x, y, size)
+  end
+
+  function r.repel(location)
+    -- Given a location, return an accelaration
+    dir = {}
+    dir.x = x - location.x
+    dir.y = y - location.y
+    mag = math.sqrt(dir.x^2 + dir.y^2)
+    -- Normalize
+    dir.x = dir.x / mag
+    dir.y = dir.y / mag
+    -- Constrain magnitude
+    mag = math.max(mag, 5)
+    mag = math.min(mag, 100)
+    -- Calculate and apply force
+    force = -1 * strength / mag^2;
+    dir.x = dir.x * force
+    dir.y = dir.y * force
+    return dir;
+  end
+  table.insert(particles.repellers, r)
+  return r
+end
+
+function particles.draw()
+  -- Draw all particle systems and repellers
+  for _,v in ipairs(particles.systems) do
+    v.draw()
+  end
+  for _,v in ipairs(particles.repellers) do
+    v.draw()
+  end
+end
+
+function particles.update(dt)
+  -- Update all particle systems
+  for _,v in ipairs(particles.systems) do
+    v.update(dt)
+  end
 end
 
 return particles

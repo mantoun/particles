@@ -11,27 +11,34 @@ local debug_text = true      -- Whether to draw the controls on the screen
 local debug_interval = 1/10  -- Time between updates
 local debug_update_timer = 0
 
--- Particle systems
--- TODO: switch to particles.systems?
-local systems = {}
 
 function love.load()
   -- Initialize controls
   controls = {{
     key="c",
     description="clear",
-    control=function() systems = {}; particles.num_particles = 0 end
+    control=function() particles.systems = {}; particles.num_particles = 0 end
   }, {
     key="m",
     description="increase rate",
     control=function()
-      for _,v in ipairs(systems) do v.rate = v.rate + 10 end
+      for _,v in ipairs(particles.systems) do v.rate = v.rate + 10 end
     end
   }, {
     key="n",
     description="decrease rate",
     control=function()
-      for _,v in ipairs(systems) do v.rate = math.max(0, v.rate-10) end
+      for _,v in ipairs(particles.systems) do
+        v.rate = math.max(0, v.rate-10)
+      end
+    end
+  }, {
+    key="p",
+    description="new system",
+    control=function()
+      local x = math.random(love.graphics.getWidth())
+      local y = math.random(love.graphics.getHeight())
+      particles.new_system(x, y, 1000)
     end
   }, {
     key="q",
@@ -53,7 +60,7 @@ end
 
 function love.update(dt)
   -- Update all particle systems
-  for _,v in ipairs(systems) do v.update(dt) end
+  particles.update(dt)
 
   -- Update debug text if it's time
   debug_update_timer = debug_update_timer + dt
@@ -72,7 +79,7 @@ end
 
 function love.draw()
   -- Draw all particle systems
-  for _,v in ipairs(systems) do v.draw() end
+  particles.draw()
 
   -- Draw debug text
   if debug_text then
@@ -89,7 +96,9 @@ function love.keypressed(key, unicode)
 end
 
 function love.mousepressed(x, y, button)
-  ps = particles.new_system(x, y, 1000)
-  ps.origin = {x=x, y=y}
-  table.insert(systems, ps)
+  if button==1 then
+    ps = particles.new_system(x, y, 1000)
+  elseif button==2 then
+    particles.new_repeller(x, y, 500000)
+  end
 end
