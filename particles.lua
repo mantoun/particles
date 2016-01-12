@@ -3,25 +3,28 @@
 -- The module
 local particles = {}
 
--- Initialize a new particle system
 function particles.new_system(num_particles)
+  -- Initialize and return a new particle system
+  local rand = math.random
   local ps = {}  -- The particle system
   -- TODO: use
   local origin = {x=0, y=0}
+  local rate = 60  -- Emission rate in particles per second
+  local timer = 0  -- Emission timer. Emit particles every 1/rate seconds.
 
   -- TODO: ability to configure system
 
   ps.particles = {}  -- Track all particles in the system
 
   function ps.new_particle(x, y)
-    print("Creating new particle at " .. x .. ", " .. y)
     local p = {}  -- the particle
-    local color = {40, 0, 200}
+    local color = ps.color or {rand(0, 255), rand(0, 255), rand(0, 200)}
     local location = {x=x, y=y}
-    local velocity = {x=0, y=100}
-    local acceleration = {x=100, y=0}
-    local size = {x=10, y=10}
-    local lifespan = 1  -- lifespan in seconds
+    local velocity = {x=rand(-200, 200), y=rand(-200, 200)}
+    local acceleration = {x=rand(-200, 200), y=rand(-200, 200)}
+    local width = rand(2, 10)
+    local size = {x=width, y=width}
+    local lifespan = rand(1, 3)  -- lifespan in seconds
 
     function p.update(dt)
       -- Update the particle. Return true if it's still alive.
@@ -36,20 +39,37 @@ function particles.new_system(num_particles)
       return true
     end
 
-    -- Draw the particle.
     function p.render()
+      -- Draw the particle.
       love.graphics.setColor(color)
       love.graphics.rectangle('fill', location.x, location.y, size.x, size.y)
     end
-    table.insert(ps.particles, p)  -- register the particle with the system
+
+    table.insert(ps.particles, p)  -- Register the particle with the system.
   end
 
   function ps.update(dt)
+    local dead = {}
+    timer = timer + dt  -- Track the time since last emission
+    -- If the system isn't at max capacity, add another particle.
+    if table.getn(ps.particles) < num_particles then
+      if timer > 1/rate then
+        local x = math.random(0, 800)
+        local y = math.random(0, 600)
+        ps.new_particle(x, y)
+        timer = 0
+      end
+    end
+    -- Update all particles keeping track of whether or not they've died.
     for k,p in ipairs(ps.particles) do
       local alive = p.update(dt)
       if not alive then
-        ps.particles[k] = nil
+        dead[#dead+1] = k
       end
+    end
+    -- Remove dead particles.
+    while #dead > 0 do
+      table.remove(ps.particles, table.remove(dead, #dead))
     end
   end
 
@@ -60,11 +80,14 @@ function particles.new_system(num_particles)
   end
 
   -- Initialize the system with particles
+  -- TODO: if one-shot
+  --[[
   for i=1,num_particles do
     local x = math.random() * 100
     local y = math.random() * 100
     ps.new_particle(x, y)
   end
+  --]]
 
   return ps
 end
