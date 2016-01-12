@@ -3,51 +3,67 @@ local particles = require 'particles'
 math.randomseed(os.time())
 
 -- Keyboard and mouse controls and debug text
-local controls, stats
-local debug_text = true
+local controls
+local stats
+local controls_list, controls_string, stats_string
+local debug_string = ""
+local debug_text = true      -- Whether to draw the controls on the screen
+local debug_interval = 1/10  -- Time between updates
+local debug_update_timer = 0
 
--- Initialization
+-- Particle systems
+local systems = {}
+
 function love.load()
-  ps = particles.new_system(100)
-  -- ps.origin = {300, 300}
-  ps2 = particles.new_system(4)
-  -- ps2.origin = {500, 200}
-  ps2.color = {255, 255, 255}
-
+  -- Initialize controls
   controls = {{
+    key="c",
+    description="clear",
+    control=function() systems = {}; particles.num_particles = 0 end
+  }, {
     key="q",
     description="quit",
     control=function() love.event.push("quit") end
   }}
+  controls_list = {}
+  for i,v in ipairs(controls) do
+    table.insert(controls_list, v.key .. "  " .. v.description)
+  end
+  -- Initialize debug stats and strings
+  controls_string = table.concat(controls_list, '\n')
+  stats = {
+    'fps ' .. love.timer.getFPS(),
+    'particles ' .. particles.num_particles
+  }
+  stats_string = table.concat(stats, '\n')
 end
 
 function love.update(dt)
   -- Update all particle systems
-  ps.update(dt)
-  ps2.update(dt)
+  for _,v in ipairs(systems) do v.update(dt) end
 
+  -- Update debug text if it's time
+  debug_update_timer = debug_update_timer + dt
   if debug_text then
-    stats = {
-      'fps ' .. love.timer.getFPS()
-    }
+    if debug_update_timer > debug_interval then
+      stats = {
+        'fps ' .. love.timer.getFPS(),
+        'particles ' .. particles.num_particles
+      }
+      stats_string = table.concat(stats, '\n')
+      debug_string = stats_string .. '\n\n' .. controls_string
+      debug_update_timer = 0
+    end
   end
 end
 
 function love.draw()
   -- Draw all particle systems
-  ps.draw()
-  ps2.draw()
+  for _,v in ipairs(systems) do v.draw() end
 
   -- Draw debug text
   if debug_text then
     love.graphics.setColor({255, 255, 255})
-    local stats_string = table.concat(stats, '\n')
-    local controls_list = {}
-    for i,v in ipairs(controls) do
-      table.insert(controls_list, v.key .. "  " .. v.description)
-    end
-    local controls_string = table.concat(controls_list, '\n')
-    local debug_string = stats_string .. '\n\n' .. controls_string
     love.graphics.print(debug_string, 20, 20)
   end
 end
@@ -60,6 +76,7 @@ function love.keypressed(key, unicode)
 end
 
 function love.mousepressed(x, y, button)
-  if button == 'l' then
-  end
+  ps = particles.new_system(100)
+  ps.origin = {x=x, y=y}
+  table.insert(systems, ps)
 end
