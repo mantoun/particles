@@ -1,8 +1,10 @@
 -- A simple particle system for Love 0.10.0
 
 -- The module
-local particles = {}
-particles.num_particles = 0  -- Track the global number of particles
+local particles = {
+  num_particles = 0,  -- Track the global number of particles
+  systems = {}
+}
 
 function particles.new_system(x, y, max_particles)
   -- Initialize and return a new particle system
@@ -12,17 +14,24 @@ function particles.new_system(x, y, max_particles)
     rate = 60,  -- Emission rate in particles per second
     timer = 0,  -- Emission timer. Emit particles every 1/rate seconds
     origin = {x=x, y=y},
-    particles = {}, -- Track all particles in the system
+    particles = {},  -- Track all particles in the system
     color = nil,
+    degrees = {min=1, max=360}
   }
 
   function ps.new_particle()
     local p = {}  -- the particle
     local color = ps.color or {rand(0, 255), rand(0, 255), rand(0, 200), 255}
     local location = {x=x, y=y}
-    local velocity = {x=rand(-200, 200), y=rand(-200, 200)}
-    local acceleration = {x=rand(-200, 200), y=20}
-    local width = rand(1, 1)
+
+    -- Generate a random angle and magnitude
+    local theta = math.rad(rand(ps.degrees.min, ps.degrees.max))
+    local r = rand(1, 50)
+    -- Convert them to a velocity vector
+    local velocity = {x=r*math.cos(theta), y=r*math.sin(theta)}
+    local acceleration = {x=0, y=0}
+
+    local width = rand(1, 2)
     local size = {x=width, y=width}
     local lifespan = rand(1, 3)  -- lifespan in seconds
 
@@ -95,6 +104,7 @@ function particles.new_system(x, y, max_particles)
   end
   --]]
 
+  table.insert(particles.systems, ps)
   return ps
 end
 

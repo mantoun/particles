@@ -12,6 +12,7 @@ local debug_interval = 1/10  -- Time between updates
 local debug_update_timer = 0
 
 -- Particle systems
+-- TODO: switch to particles.systems?
 local systems = {}
 
 function love.load()
