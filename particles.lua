@@ -3,10 +3,8 @@
 -- The module
 local particles = {
   num_particles = 0,  -- Track the global number of particles
-  systems = {},
-  forces = {
-    {x=0, y=80}  -- Gravity
-  },
+  systems = {},       -- All particle systems
+  forces = {},        -- Arbitrary force vectors to be applied the particles
   repellers = {},
   image = love.graphics.newImage('img/particle.png')
 }
@@ -24,14 +22,15 @@ function particles.new_system(x, y, max_particles)
   local mesh = love.graphics.newMesh(verts, "strip", "static")
   mesh:setTexture(particles.image)
   
-  local ps = {  -- The particle system
-    rate = 60,  -- Emission rate in particles per second
-    timer = 0,  -- Emission timer. Emit particles every 1/rate seconds
+  local ps = {        -- The particle system
+    rate = 100,       -- Emission rate in particles per second
+    timer = 0,        -- Emission timer. Emit particles every 1/rate seconds
     origin = {x=x, y=y},
-    particles = {},  -- Track all particles in the system
+    particles = {},   -- Track all particles in the system
     color = nil,
     degrees = {min=1, max=360},
-    texture = true  -- Whether or not to draw the mesh for each particle
+    texture = false,  -- Whether or not to draw the mesh for each particle
+    mass = 1          -- The mass of particles
   }
 
   function ps.new_particle()
@@ -43,18 +42,19 @@ function particles.new_system(x, y, max_particles)
       color = {rand(0, 255), rand(0, 255), rand(0, 255), 255}
     end
     local location = {x=x, y=y}
+    local mass = ps.mass
 
 
     -- Generate a random angle and magnitude
     local theta = math.rad(rand(ps.degrees.min, ps.degrees.max))
-    local r = rand(1, 50)
+    local r = rand(1, 100)
     -- Convert them to a velocity vector
     local velocity = {x=r*math.cos(theta), y=r*math.sin(theta)}
     local acceleration = {x=0, y=0}
 
     local width = rand(1, 2)
     local size = {x=width, y=width}
-    local lifespan = rand(1, 3)  -- lifespan in seconds
+    local lifespan = rand(1, 10)  -- lifespan in seconds
 
     function p.update(dt)
       -- Update the particle. Return true if it's still alive.
@@ -64,17 +64,24 @@ function particles.new_system(x, y, max_particles)
         return false
       end
 
-      -- TODO: particle mass
+      -- Apply gravity (a special force that ignores mass) to each particle
+      local gravity = {x=0, y=100}
+      velocity.x = velocity.x + gravity.x * dt
+      velocity.y = velocity.y + gravity.y * dt
       -- Apply forces to each particle
       for _,f in ipairs(particles.forces) do
-        velocity.x = velocity.x + f.x * dt
-        velocity.y = velocity.y + f.y * dt
+        local x = f.x / mass
+        local y = f.y / mass
+        velocity.x = velocity.x + x * dt
+        velocity.y = velocity.y + y * dt
       end
       -- Apply repellers to each particle
       for _,r in ipairs(particles.repellers) do
         local acceleration = r.repel(location)
-        velocity.x = velocity.x + acceleration.x * dt
-        velocity.y = velocity.y + acceleration.y * dt
+        local x = acceleration.x / mass
+        local y = acceleration.y / mass
+        velocity.x = velocity.x + x * dt
+        velocity.y = velocity.y + y * dt
       end
       -- Update particle location
       location.x = location.x + velocity.x * dt
