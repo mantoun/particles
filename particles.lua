@@ -5,14 +5,24 @@ local particles = {
   num_particles = 0,  -- Track the global number of particles
   systems = {},
   forces = {
-    {x=0, y=100}  -- Gravity
+    {x=0, y=80}  -- Gravity
   },
-  repellers = {}
+  repellers = {},
+  image = love.graphics.newImage('img/particle.png')
 }
 
 function particles.new_system(x, y, max_particles)
   -- Initialize and return a new particle system
   local rand = math.random
+
+  -- Create a mesh for the particles
+  local verts = {}
+  verts[1] = {-1, -1, 0, 0}
+  verts[2] = {-1, 1, 0, 1}
+  verts[3] = {1, -1, 1, 0}
+  verts[4] = {1, 1, 1, 1}
+  local mesh = love.graphics.newMesh(verts, "strip", "static")
+  mesh:setTexture(particles.image)
   
   local ps = {  -- The particle system
     rate = 60,  -- Emission rate in particles per second
@@ -20,13 +30,20 @@ function particles.new_system(x, y, max_particles)
     origin = {x=x, y=y},
     particles = {},  -- Track all particles in the system
     color = nil,
-    degrees = {min=1, max=360}
+    degrees = {min=1, max=360},
+    texture = true  -- Whether or not to draw the mesh for each particle
   }
 
   function ps.new_particle()
     local p = {}  -- the particle
-    local color = ps.color or {rand(0, 255), rand(0, 255), rand(0, 200), 255}
+    local color
+    if ps.color then
+      color = {ps.color[1], ps.color[2], ps.color[3], ps.color[4]}  -- A copy
+    else
+      color = {rand(0, 255), rand(0, 255), rand(0, 255), 255}
+    end
     local location = {x=x, y=y}
+
 
     -- Generate a random angle and magnitude
     local theta = math.rad(rand(ps.degrees.min, ps.degrees.max))
@@ -47,6 +64,7 @@ function particles.new_system(x, y, max_particles)
         return false
       end
 
+      -- TODO: particle mass
       -- Apply forces to each particle
       for _,f in ipairs(particles.forces) do
         velocity.x = velocity.x + f.x * dt
@@ -54,7 +72,6 @@ function particles.new_system(x, y, max_particles)
       end
       -- Apply repellers to each particle
       for _,r in ipairs(particles.repellers) do
-        -- TODO: ref to p?
         local acceleration = r.repel(location)
         velocity.x = velocity.x + acceleration.x * dt
         velocity.y = velocity.y + acceleration.y * dt
@@ -64,14 +81,18 @@ function particles.new_system(x, y, max_particles)
       location.y = location.y + velocity.y * dt
       return true
     end
-    -- TODO: particle mass
 
     function p.render()
       -- Draw the particle.
       love.graphics.setColor(color)
-      --love.graphics.ellipse('fill', location.x, location.y, size.x, size.y)
-      --love.graphics.rectangle('fill', location.x, location.y, size.x, size.y)
-      love.graphics.circle('fill', location.x, location.y, size.x)
+      if ps.texture then
+        love.graphics.draw(mesh, location.x, location.y, 0, 4*size.x)
+      else
+        --love.graphics.ellipse('fill', location.x, location.y, size.x, size.y)
+        --love.graphics.rectangle('fill', location.x, location.y, size.x, size.y)
+        love.graphics.circle('fill', location.x, location.y, size.x)
+      end
+
     end
 
     table.insert(ps.particles, p)  -- Register the particle with the system.

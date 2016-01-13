@@ -38,6 +38,14 @@ function love.load()
       end
     end
   }, {
+    key="t",
+    description="toggle particle textures",
+    control=function()
+      for _,v in ipairs(particles.systems) do
+        v.texture = not v.texture
+      end
+    end
+  }, {
     key="r",
     description="reverse polarity of attractor",
     control=function()
