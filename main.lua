@@ -52,11 +52,10 @@ function love.load()
       polarity = polarity * -1
     end
   }, {
-    key="p",
-    description="new system",
+    key="1",
+    description="preset 1",
     control=function()
-      local x = math.random(love.graphics.getWidth())
-      local y = math.random(love.graphics.getHeight())
+      local x, y = love.mouse.getPosition()
       particles.new_system(x, y, 1000)
     end
   }, {

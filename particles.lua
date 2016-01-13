@@ -9,8 +9,8 @@ local particles = {
   image = love.graphics.newImage('img/particle.png')
 }
 
+-- Initialize and return a new particle system
 function particles.new_system(x, y, max_particles)
-  -- Initialize and return a new particle system
   local rand = math.random
 
   -- Create a mesh for the particles
@@ -22,6 +22,7 @@ function particles.new_system(x, y, max_particles)
   local mesh = love.graphics.newMesh(verts, "strip", "static")
   mesh:setTexture(particles.image)
   
+  -- Configure the particle system
   local ps = {        -- The particle system
     rate = 100,       -- Emission rate in particles per second
     timer = 0,        -- Emission timer. Emit particles every 1/rate seconds
@@ -30,7 +31,8 @@ function particles.new_system(x, y, max_particles)
     color = nil,
     degrees = {min=1, max=360},
     texture = false,  -- Whether or not to draw the mesh for each particle
-    mass = 1          -- The mass of particles
+    mass = 1,         -- The mass of particles
+    one_shot = true   -- Emit all particles at once and then stop
   }
 
   function ps.new_particle()
@@ -43,7 +45,8 @@ function particles.new_system(x, y, max_particles)
     end
     local location = {x=x, y=y}
     local mass = ps.mass
-
+    local rotation = math.rad(rand(360))
+    local angular_velocity = rand() * 3 - 1.5  -- [-1.5, 1.5]
 
     -- Generate a random angle and magnitude
     local theta = math.rad(rand(ps.degrees.min, ps.degrees.max))
@@ -63,9 +66,10 @@ function particles.new_system(x, y, max_particles)
       if color[4] <= 0 then
         return false
       end
-
+      -- Apply rotation
+      rotation = rotation + angular_velocity * dt
       -- Apply gravity (a special force that ignores mass) to each particle
-      local gravity = {x=0, y=100}
+      local gravity = {x=0, y=0}
       velocity.x = velocity.x + gravity.x * dt
       velocity.y = velocity.y + gravity.y * dt
       -- Apply forces to each particle
@@ -93,7 +97,7 @@ function particles.new_system(x, y, max_particles)
       -- Draw the particle.
       love.graphics.setColor(color)
       if ps.texture then
-        love.graphics.draw(mesh, location.x, location.y, 0, 4*size.x)
+        love.graphics.draw(mesh, location.x, location.y, rotation, 4*size.x)
       else
         --love.graphics.ellipse('fill', location.x, location.y, size.x, size.y)
         --love.graphics.rectangle('fill', location.x, location.y, size.x, size.y)
@@ -140,13 +144,16 @@ function particles.new_system(x, y, max_particles)
     end
   end
 
-  -- Initialize the system with particles
-  -- TODO: if one-shot
-  --[[
-  for i=1,max_particles do
-    ps.new_particle()
+  -- If this is a one-shot system emit all particles at once and set
+  -- max_particles to 0 to stop further emissions.
+  if ps.one_shot then
+    for i=1,max_particles do
+      ps.new_particle()
+      max_particles = 0
+      -- TODO: ideally we'd remove the system from the particles.systems after
+      -- the last of its particles was destroyed
+    end
   end
-  --]]
 
   table.insert(particles.systems, ps)
   return ps
