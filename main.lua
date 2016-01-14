@@ -5,13 +5,18 @@ math.randomseed(os.time())
 -- Keyboard and mouse controls and debug text
 local controls
 local stats
-local controls_list, controls_string, stats_string
+local controls_list, stats_string
 local debug_string = ""
-local debug_text = true      -- Whether to draw the controls on the screen
-local debug_interval = 1/10  -- Time between updates
+local debug_text = true       -- Whether to draw the controls on the screen
+local debug_interval = 1/10   -- Time between updates
 local debug_update_timer = 0
-local polarity = 1           -- Default polarity for attractor / repeller
-
+local config = {}             -- User changeable config for systems
+config.rate = 100
+config.texture = false
+config.one_shot = true
+config.degrees = {min=1, max=360}
+config.gravity = false
+config.lifespan = {min=1, max=4}
 
 function love.load()
   -- Initialize controls
@@ -24,99 +29,63 @@ function love.load()
       particles.num_particles = 0
     end
   }, {
+    key="w",
+    description="min angle -",
+    control=function() config.degrees.min = config.degrees.min - 10 end
+  }, {
+    key="e",
+    description="min angle +",
+    control=function() config.degrees.min = config.degrees.min + 10 end
+  }, {
+    key="s",
+    description="max angle -",
+    control=function() config.degrees.max = config.degrees.max - 10 end
+  }, {
+    key="d",
+    description="max angle +",
+    control=function() config.degrees.max = config.degrees.max + 10 end
+  }, {
     key="m",
-    description="increase rate",
-    control=function()
-      for _,v in ipairs(particles.systems) do v.rate = v.rate + 10 end
-    end
+    description="emission rate +",
+    control=function() config.rate = config.rate + 20 end
   }, {
     key="n",
-    description="decrease rate",
-    control=function()
-      for _,v in ipairs(particles.systems) do
-        v.rate = math.max(0, v.rate-10)
-      end
-    end
-  }, {
-    key="t",
-    description="toggle particle textures",
-    control=function()
-      for _,v in ipairs(particles.systems) do
-        v.texture = not v.texture
-      end
-    end
+    description="emission rate -",
+    control=function() config.rate = config.rate - 20 end
   }, {
     key="r",
-    description="reverse polarity of attractor",
+    description="gravity",
+    control=function() config.gravity = not config.gravity end
+  }, {
+    key="t",
+    description="particle textures",
+    control=function() config.texture = not config.texture end
+  }, {
+    key="y",
+    description="burst",
+    control=function() config.one_shot = not config.one_shot end
+  }, {
+    key="o",
+    description="place attractor",
     control=function()
-      polarity = polarity * -1
+      local x, y = love.mouse.getPosition()
+      particles.new_repeller(x, y, 1)
+    end
+  }, {
+    key="p",
+    description="place repeller",
+    control=function()
+      local x, y = love.mouse.getPosition()
+      particles.new_repeller(x, y, -1)
     end
   }, {
     key="1",
     description="preset 1",
     control=function()
       local x, y = love.mouse.getPosition()
-      local config = {
-        max_particles=1000,
-        color={20, 255, 0, 255},
-        end_color={0, 0, 255, 255},
-        velocity={min=20, max=20},
-        fade = false,
-        lifespan = {min=1, max=1}
-      }
+      local config = {}
       particles.new_system(x, y, config)
-      config = {
-        max_particles=1000,
-        color={255, 0, 0, 255},
-        velocity={min=10, max=10},
-        one_shot = true,
-        fade = false,
-      }
-      particles.new_system(x, y, config)
-    end
-  }, {
-    key="2",
-    description="preset 2",
-    control=function()
-      local x, y = love.mouse.getPosition()
-      local config = {
-        max_particles=1000,
-        color={20, 255, 0, 255},
-        end_color={255, 255, 0, 255},
-        velocity={min=20, max=50},
-        size={min=1, max=1},
-        one_shot = true,
-        gravity = true,
-        lifespan = {min=2, max=2},
-      }
-      particles.new_system(x, y, config)
-      config.color = {0, 0, 255, 255}
-      particles.new_system(x, y, config)
-      config = {
-        max_particles=20,
-        color={255, 0, 0, 255},
-        velocity={min=5, max=10},
-        size={min=5, max=10},
-        one_shot = true,
-        fade = false,
-        lifespan = {min=2, max=2},
-      }
-      config.texture = true
-      particles.new_system(x, y, config)
-    end
-  }, {
-    key="3",
-    description="preset 3",
-    control=function()
-      local x, y = love.mouse.getPosition()
-      local config = {
-        max_particles=1,
-        color={20, 255, 0, 255},
-        velocity={min=20, max=50},
-        size={min=10, max=10},
-        one_shot = true,
-        lifespan = {min=5, max=5},
-      }
+      config = {}
       particles.new_system(x, y, config)
     end
   }, {
@@ -124,17 +93,6 @@ function love.load()
     description="quit",
     control=function() love.event.push("quit") end
   }}
-  controls_list = {}
-  for i,v in ipairs(controls) do
-    table.insert(controls_list, v.key .. "  " .. v.description)
-  end
-  -- Initialize debug stats and strings
-  controls_string = table.concat(controls_list, '\n')
-  stats = {
-    'fps ' .. love.timer.getFPS(),
-    'particles ' .. particles.num_particles
-  }
-  stats_string = table.concat(stats, '\n')
 end
 
 function love.update(dt)
@@ -150,7 +108,26 @@ function love.update(dt)
         'particles ' .. particles.num_particles
       }
       stats_string = table.concat(stats, '\n')
-      debug_string = stats_string .. '\n\n' .. controls_string
+      -- Regenerate the controls list to reflect current config values
+      controls_list = {}
+      for i,v in ipairs(controls) do
+        local d = v.description
+        if v.key == "m" then
+          d = string.format("%s [%s]", d, config.rate)
+        elseif v.key == "t" then
+          d = string.format("%s [%s]", d, config.texture)
+        elseif v.key == "y" then
+          d = string.format("%s [%s]", d, config.one_shot)
+        elseif v.key == "w" then
+          d = string.format("%s [%s]", d, config.degrees.min)
+        elseif v.key == "s" then
+          d = string.format("%s [%s]", d, config.degrees.max)
+        elseif v.key == "r" then
+          d = string.format("%s [%s]", d, config.gravity)
+        end
+        table.insert(controls_list, v.key .. "  " .. d)
+      end
+      debug_string = stats_string .. '\n\n' .. table.concat(controls_list, '\n')
       debug_update_timer = 0
     end
   end
@@ -176,9 +153,7 @@ end
 
 function love.mousepressed(x, y, button)
   if button==1 then
-    local config = {max_particles=100}
+    -- Place a new system with the global config
     particles.new_system(x, y, config)
-  elseif button==2 then
-    particles.new_repeller(x, y, polarity)
   end
 end

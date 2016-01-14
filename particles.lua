@@ -19,6 +19,7 @@ function particles.new_system(x, y, conf)
   ps.particles = {}   -- Track all particles in the system
   ps.timer = 0        -- Track time between emissions
   -- Configure the particle system
+  local conf = conf or {}
   ps.max_particles = conf.max_particles or 1000
   ps.rate = conf.rate or 100            -- Emission in particles per second
   ps.origin = conf.origin or {x=x, y=y} -- The origin of the system
