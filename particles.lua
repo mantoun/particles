@@ -1,4 +1,7 @@
 -- A simple particle system for Love 0.10.0
+local rand = math.random
+local randf = function(min, max) return rand() * (max - min) + min end
+local lerp = function(a,b,t) return (1 - t) * a + t * b end
 
 -- The module
 local particles = {}
@@ -6,10 +9,10 @@ particles.num_particles = 0   -- Track the global number of particles
 particles.systems = {}        -- All particle systems
 particles.forces = {}         -- Arbitrary force vectors to apply
 particles.repellers = {}      -- Repellers / attractors
+local gravity = {x=0, y=100}
 
 -- Initialize and return a new particle system
 function particles.new_system(x, y, conf)
-  local rand = math.random
 
   -- Create the system
   local ps = {}
@@ -20,6 +23,7 @@ function particles.new_system(x, y, conf)
   ps.rate = conf.rate or 100            -- Emission in particles per second
   ps.origin = conf.origin or {x=x, y=y} -- The origin of the system
   ps.color = conf.color or nil          -- A default color
+  ps.end_color = conf.end_color or nil  -- A target color
   ps.degrees = conf.degrees or {min=1, max=360}
   ps.mass = conf.mass or 1              -- The mass of particles
   ps.one_shot = conf.one_shot or false  -- Emit all particles at once then stop
@@ -28,6 +32,8 @@ function particles.new_system(x, y, conf)
   ps.lifespan = conf.lifespan or {min=1, max=10}  -- Lifespan in seconds
   ps.texture = conf.texture or false              -- Draw a textured mesh
   ps.image = conf.image or 'img/particle.png'
+  ps.gravity = conf.gravity or false
+  ps.fade = not (conf.fade==false or false)       -- Default to true
 
   -- Create a mesh for the particles
   local image = love.graphics.newImage(ps.image)
@@ -50,29 +56,32 @@ function particles.new_system(x, y, conf)
     local location = {x=ps.origin.x, y=ps.origin.y}
     local mass = ps.mass
     local rotation = math.rad(rand(360))
-    local angular_velocity = rand() * 3 - 1.5  -- [-1.5, 1.5] TODO: config
-    local size = rand(ps.size.min, ps.size.max)
-    local lifespan = rand(ps.lifespan.min, ps.lifespan.max)
+    local angular_velocity = randf(-1.5, 1.5)
+    local size = randf(ps.size.min, ps.size.max)
+    local lifespan = randf(ps.lifespan.min, ps.lifespan.max)
+    local elapsed = 0
 
     -- Generate a random angle and magnitude
-    local theta = math.rad(rand(ps.degrees.min, ps.degrees.max))
-    local r = rand(ps.velocity.min, ps.velocity.max)
+    local theta = math.rad(randf(ps.degrees.min, ps.degrees.max))
+    local r = randf(ps.velocity.min, ps.velocity.max)
     -- Convert them to a velocity vector
     local velocity = {x=r*math.cos(theta), y=r*math.sin(theta)}
 
     function p.update(dt)
       -- Update the particle. Return true if it's still alive.
-      -- Reduce alpha based on lifespan.
-      color[4] = color[4] - 255/lifespan * dt
-      if color[4] <= 0 then
-        return false
+      elapsed = elapsed + dt
+      if elapsed > lifespan then return false end
+      if ps.fade then
+        -- Reduce alpha based on lifespan.
+        color[4] = color[4] - 255/lifespan * dt
       end
       -- Apply rotation
       rotation = rotation + angular_velocity * dt
       -- Apply gravity (a special force that ignores mass) to each particle
-      local gravity = {x=0, y=0}
-      velocity.x = velocity.x + gravity.x * dt
-      velocity.y = velocity.y + gravity.y * dt
+      if ps.gravity then
+        velocity.x = velocity.x + gravity.x * dt
+        velocity.y = velocity.y + gravity.y * dt
+      end
       -- Apply forces to each particle
       for _,f in ipairs(particles.forces) do
         local x = f.x / mass
@@ -91,6 +100,13 @@ function particles.new_system(x, y, conf)
       -- Update particle location
       location.x = location.x + velocity.x * dt
       location.y = location.y + velocity.y * dt
+      -- Update particle color. TODO: lerp in HSV space instead
+      if ps.color and ps.end_color then
+        local t = elapsed / lifespan
+        color[1] = lerp(ps.color[1], ps.end_color[1], t)
+        color[2] = lerp(ps.color[2], ps.end_color[2], t)
+        color[3] = lerp(ps.color[3], ps.end_color[3], t)
+      end
       return true
     end
 

@@ -59,14 +59,63 @@ function love.load()
       local config = {
         max_particles=1000,
         color={20, 255, 0, 255},
-        velocity={min=20, max=20}
+        end_color={0, 0, 255, 255},
+        velocity={min=20, max=20},
+        fade = false,
+        lifespan = {min=1, max=1}
       }
       particles.new_system(x, y, config)
       config = {
         max_particles=1000,
         color={255, 0, 0, 255},
         velocity={min=10, max=10},
-        one_shot = true
+        one_shot = true,
+        fade = false,
+      }
+      particles.new_system(x, y, config)
+    end
+  }, {
+    key="2",
+    description="preset 2",
+    control=function()
+      local x, y = love.mouse.getPosition()
+      local config = {
+        max_particles=1000,
+        color={20, 255, 0, 255},
+        end_color={255, 255, 0, 255},
+        velocity={min=20, max=50},
+        size={min=1, max=1},
+        one_shot = true,
+        gravity = true,
+        lifespan = {min=2, max=2},
+      }
+      particles.new_system(x, y, config)
+      config.color = {0, 0, 255, 255}
+      particles.new_system(x, y, config)
+      config = {
+        max_particles=20,
+        color={255, 0, 0, 255},
+        velocity={min=5, max=10},
+        size={min=5, max=10},
+        one_shot = true,
+        fade = false,
+        lifespan = {min=2, max=2},
+      }
+      config.texture = true
+      particles.new_system(x, y, config)
+    end
+  }, {
+    key="3",
+    description="preset 3",
+    control=function()
+      local x, y = love.mouse.getPosition()
+      local config = {
+        max_particles=1,
+        color={20, 255, 0, 255},
+        velocity={min=20, max=50},
+        size={min=10, max=10},
+        one_shot = true,
+        lifespan = {min=5, max=5},
       }
       particles.new_system(x, y, config)
     end
