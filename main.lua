@@ -56,7 +56,19 @@ function love.load()
     description="preset 1",
     control=function()
       local x, y = love.mouse.getPosition()
-      particles.new_system(x, y, 1000)
+      local config = {
+        max_particles=1000,
+        color={20, 255, 0, 255},
+        velocity={min=20, max=20}
+      }
+      particles.new_system(x, y, config)
+      config = {
+        max_particles=1000,
+        color={255, 0, 0, 255},
+        velocity={min=10, max=10},
+        one_shot = true
+      }
+      particles.new_system(x, y, config)
     end
   }, {
     key="q",
@@ -115,7 +127,8 @@ end
 
 function love.mousepressed(x, y, button)
   if button==1 then
-    ps = particles.new_system(x, y, 1000)
+    local config = {max_particles=100}
+    particles.new_system(x, y, config)
   elseif button==2 then
     particles.new_repeller(x, y, polarity)
   end

@@ -1,63 +1,64 @@
 -- A simple particle system for Love 0.10.0
 
 -- The module
-local particles = {
-  num_particles = 0,  -- Track the global number of particles
-  systems = {},       -- All particle systems
-  forces = {},        -- Arbitrary force vectors to be applied the particles
-  repellers = {},
-  image = love.graphics.newImage('img/particle.png')
-}
+local particles = {}
+particles.num_particles = 0   -- Track the global number of particles
+particles.systems = {}        -- All particle systems
+particles.forces = {}         -- Arbitrary force vectors to apply
+particles.repellers = {}      -- Repellers / attractors
 
 -- Initialize and return a new particle system
-function particles.new_system(x, y, max_particles)
+function particles.new_system(x, y, conf)
   local rand = math.random
 
+  -- Create the system
+  local ps = {}
+  ps.particles = {}   -- Track all particles in the system
+  ps.timer = 0        -- Track time between emissions
+  -- Configure the particle system
+  ps.max_particles = conf.max_particles or 1000
+  ps.rate = conf.rate or 100            -- Emission in particles per second
+  ps.origin = conf.origin or {x=x, y=y} -- The origin of the system
+  ps.color = conf.color or nil          -- A default color
+  ps.degrees = conf.degrees or {min=1, max=360}
+  ps.mass = conf.mass or 1              -- The mass of particles
+  ps.one_shot = conf.one_shot or false  -- Emit all particles at once then stop
+  ps.size = conf.size or {min=1, max=2} -- TODO: support different w & h
+  ps.velocity = conf.velocity or {min=1, max=100}
+  ps.lifespan = conf.lifespan or {min=1, max=10}  -- Lifespan in seconds
+  ps.texture = conf.texture or false              -- Draw a textured mesh
+  ps.image = conf.image or 'img/particle.png'
+
   -- Create a mesh for the particles
+  local image = love.graphics.newImage(ps.image)
   local verts = {}
   verts[1] = {-1, -1, 0, 0}
   verts[2] = {-1, 1, 0, 1}
   verts[3] = {1, -1, 1, 0}
   verts[4] = {1, 1, 1, 1}
   local mesh = love.graphics.newMesh(verts, "strip", "static")
-  mesh:setTexture(particles.image)
-  
-  -- Configure the particle system
-  local ps = {        -- The particle system
-    rate = 100,       -- Emission rate in particles per second
-    timer = 0,        -- Emission timer. Emit particles every 1/rate seconds
-    origin = {x=x, y=y},
-    particles = {},   -- Track all particles in the system
-    color = nil,
-    degrees = {min=1, max=360},
-    texture = false,  -- Whether or not to draw the mesh for each particle
-    mass = 1,         -- The mass of particles
-    one_shot = true   -- Emit all particles at once and then stop
-  }
+  mesh:setTexture(image)
 
   function ps.new_particle()
-    local p = {}  -- the particle
+    local p = {}  -- The particle
     local color
     if ps.color then
       color = {ps.color[1], ps.color[2], ps.color[3], ps.color[4]}  -- A copy
     else
       color = {rand(0, 255), rand(0, 255), rand(0, 255), 255}
     end
-    local location = {x=x, y=y}
+    local location = {x=ps.origin.x, y=ps.origin.y}
     local mass = ps.mass
     local rotation = math.rad(rand(360))
-    local angular_velocity = rand() * 3 - 1.5  -- [-1.5, 1.5]
+    local angular_velocity = rand() * 3 - 1.5  -- [-1.5, 1.5] TODO: config
+    local size = rand(ps.size.min, ps.size.max)
+    local lifespan = rand(ps.lifespan.min, ps.lifespan.max)
 
     -- Generate a random angle and magnitude
     local theta = math.rad(rand(ps.degrees.min, ps.degrees.max))
-    local r = rand(1, 100)
+    local r = rand(ps.velocity.min, ps.velocity.max)
     -- Convert them to a velocity vector
     local velocity = {x=r*math.cos(theta), y=r*math.sin(theta)}
-    local acceleration = {x=0, y=0}
-
-    local width = rand(1, 2)
-    local size = {x=width, y=width}
-    local lifespan = rand(1, 10)  -- lifespan in seconds
 
     function p.update(dt)
       -- Update the particle. Return true if it's still alive.
@@ -94,16 +95,15 @@ function particles.new_system(x, y, max_particles)
     end
 
     function p.render()
-      -- Draw the particle.
+      -- Draw the particle
       love.graphics.setColor(color)
       if ps.texture then
-        love.graphics.draw(mesh, location.x, location.y, rotation, 4*size.x)
+        love.graphics.draw(mesh, location.x, location.y, rotation, 4*size)
       else
-        --love.graphics.ellipse('fill', location.x, location.y, size.x, size.y)
-        --love.graphics.rectangle('fill', location.x, location.y, size.x, size.y)
-        love.graphics.circle('fill', location.x, location.y, size.x)
+        --love.graphics.ellipse('fill', location.x, location.y, size, size)
+        --love.graphics.rectangle('fill', location.x, location.y, size, size)
+        love.graphics.circle('fill', location.x, location.y, size)
       end
-
     end
 
     table.insert(ps.particles, p)  -- Register the particle with the system.
@@ -114,10 +114,10 @@ function particles.new_system(x, y, max_particles)
     local dead = {}
     ps.timer = ps.timer + dt  -- Track the time since last emission
     -- If the system isn't at max capacity, add more particles.
-    if #ps.particles < max_particles then
+    if #ps.particles < ps.max_particles then
       if ps.timer > 1/ps.rate then
         -- Compute how many particles to emit
-        local need = max_particles - #ps.particles
+        local need = ps.max_particles - #ps.particles
         for i=1,math.min(need, math.ceil(ps.rate*dt)) do
           ps.new_particle()
         end
@@ -147,9 +147,9 @@ function particles.new_system(x, y, max_particles)
   -- If this is a one-shot system emit all particles at once and set
   -- max_particles to 0 to stop further emissions.
   if ps.one_shot then
-    for i=1,max_particles do
+    for i=1,ps.max_particles do
       ps.new_particle()
-      max_particles = 0
+      ps.max_particles = 0
       -- TODO: ideally we'd remove the system from the particles.systems after
       -- the last of its particles was destroyed
     end
