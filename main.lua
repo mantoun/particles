@@ -63,7 +63,12 @@ function love.load()
   }, {
     key="r",
     description="gravity",
-    control=function() config.gravity = not config.gravity end
+    control=function()
+      config.gravity = not config.gravity
+      for _,v in ipairs(particles.systems) do
+        v.gravity = config.gravity
+      end
+    end
   }, {
     key="t",
     description="particle textures",

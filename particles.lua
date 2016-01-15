@@ -193,7 +193,7 @@ function particles.new_repeller(x, y, polarity)
 
   function r.update(dt)
     -- Fade transparency in and out over time
-    color[4] = lerp(150, 255, (math.sin(6*love.timer.getTime()) + 1) / 2)
+    color[4] = lerp(150, 255, (math.sin(4*love.timer.getTime()) + 1) / 2)
   end
 
   function r.repel(location)
