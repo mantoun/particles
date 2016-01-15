@@ -30,7 +30,7 @@ function particles.new_system(x, y, conf)
   ps.one_shot = conf.one_shot or false  -- Emit all particles at once then stop
   ps.size = conf.size or {min=1, max=2} -- TODO: support different w & h
   ps.velocity = conf.velocity or {min=1, max=100}
-  ps.lifespan = conf.lifespan or {min=1, max=10}  -- Lifespan in seconds
+  ps.lifespan = conf.lifespan or {min=1, max=4}   -- Lifespan in seconds
   ps.texture = conf.texture or false              -- Draw a textured mesh
   ps.image = conf.image or 'img/particle.png'
   ps.gravity = conf.gravity or false
