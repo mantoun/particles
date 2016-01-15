@@ -20,6 +20,22 @@ config.degrees = {min=1, max=360}
 config.gravity = false
 config.lifespan = {min=1, max=4}
 
+-- A utility function to copy tables
+function deepcopy(orig)
+  local orig_type = type(orig)
+  local copy
+  if orig_type == 'table' then
+    copy = {}
+    for orig_key, orig_value in next, orig, nil do
+      copy[deepcopy(orig_key)] = deepcopy(orig_value)
+    end
+    setmetatable(copy, deepcopy(getmetatable(orig)))
+  else -- number, string, boolean, etc
+    copy = orig
+  end
+  return copy
+end
+
 function love.load()
   -- Initialize controls
   controls = {{
@@ -180,6 +196,7 @@ end
 function love.mousepressed(x, y, button)
   if button==1 then
     -- Place a new system with the global config
-    last = particles.new_system(x, y, config)
+    local c = deepcopy(config)
+    last = particles.new_system(x, y, c)
   end
 end
