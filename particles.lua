@@ -180,14 +180,20 @@ function particles.new_repeller(x, y, polarity)
   local r = {}
   r.strength = 250000
   r.polarity = polarity or -1
-  local red = {255, 0, 0}
-  local blue = {0, 0, 255}
+  local red = {255, 0, 0, 255}
+  local blue = {0, 0, 255, 255}
+  local color = (r.polarity==-1) and red or blue
   local size = 4
+  local out = true
 
   function r.draw()
-    local color = (r.polarity==-1) and red or blue
     love.graphics.setColor(color)
-    love.graphics.circle('fill', x, y, size)
+    love.graphics.circle('line', x, y, size)
+  end
+
+  function r.update(dt)
+    -- Fade transparency in and out over time
+    color[4] = lerp(150, 255, (math.sin(6*love.timer.getTime()) + 1) / 2)
   end
 
   function r.repel(location)
@@ -223,8 +229,11 @@ function particles.draw()
 end
 
 function particles.update(dt)
-  -- Update all particle systems
+  -- Update all particle systems and repellers
   for _,v in ipairs(particles.systems) do
+    v.update(dt)
+  end
+  for _,v in ipairs(particles.repellers) do
     v.update(dt)
   end
 end

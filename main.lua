@@ -10,10 +10,12 @@ local debug_string = ""
 local debug_text = true       -- Whether to draw the controls on the screen
 local debug_interval = 1/10   -- Time between updates
 local debug_update_timer = 0
+local last = {rate=0}         -- The most recently placed system
 local config = {}             -- User changeable config for systems
+config.max_particles = 500
 config.rate = 100
 config.texture = false
-config.one_shot = true
+config.one_shot = false
 config.degrees = {min=1, max=360}
 config.gravity = false
 config.lifespan = {min=1, max=4}
@@ -21,14 +23,6 @@ config.lifespan = {min=1, max=4}
 function love.load()
   -- Initialize controls
   controls = {{
-    key="c",
-    description="clear",
-    control=function()
-      particles.systems = {};
-      particles.repellers = {};
-      particles.num_particles = 0
-    end
-  }, {
     key="w",
     description="min angle -",
     control=function() config.degrees.min = config.degrees.min - 10 end
@@ -45,13 +39,27 @@ function love.load()
     description="max angle +",
     control=function() config.degrees.max = config.degrees.max + 10 end
   }, {
+    key="j",
+    description="max particles -",
+    control=function() config.max_particles = config.max_particles - 20 end
+  }, {
+    key="k",
+    description="max particles +",
+    control=function() config.max_particles = config.max_particles + 20 end
+  }, {
     key="m",
     description="emission rate +",
-    control=function() config.rate = config.rate + 20 end
+    control=function()
+      last.rate = last.rate + 20
+      config.rate = config.rate + 20
+    end
   }, {
     key="n",
     description="emission rate -",
-    control=function() config.rate = config.rate - 20 end
+    control=function()
+      last.rate = last.rate - 20
+      config.rate = config.rate - 20
+    end
   }, {
     key="r",
     description="gravity",
@@ -80,13 +88,21 @@ function love.load()
     end
   }, {
     key="1",
-    description="preset 1",
+    description="preset",
     control=function()
       local x, y = love.mouse.getPosition()
       local config = {}
       particles.new_system(x, y, config)
       config = {}
       particles.new_system(x, y, config)
+    end
+  }, {
+    key="c",
+    description="clear",
+    control=function()
+      particles.systems = {};
+      particles.repellers = {};
+      particles.num_particles = 0
     end
   }, {
     key="q",
@@ -120,10 +136,15 @@ function love.update(dt)
           d = string.format("%s [%s]", d, config.one_shot)
         elseif v.key == "w" then
           d = string.format("%s [%s]", d, config.degrees.min)
+        elseif v.key == "j" then
+          d = string.format("%s [%s]", d, config.max_particles)
         elseif v.key == "s" then
           d = string.format("%s [%s]", d, config.degrees.max)
         elseif v.key == "r" then
           d = string.format("%s [%s]", d, config.gravity)
+        elseif v.key == "p" then
+          -- Add a divider
+          d = string.format("%s\n----------------", d)
         end
         table.insert(controls_list, v.key .. "  " .. d)
       end
@@ -154,6 +175,6 @@ end
 function love.mousepressed(x, y, button)
   if button==1 then
     -- Place a new system with the global config
-    particles.new_system(x, y, config)
+    last = particles.new_system(x, y, config)
   end
 end
