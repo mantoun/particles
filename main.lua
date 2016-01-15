@@ -120,22 +120,22 @@ function love.load()
       local config = {}
       -- Inner. Orange to red
       config.one_shot = true
-      config.max_particles = 200
+      config.max_particles = 100
       config.velocity = {min=1, max=200}
       config.color = orange
       config.end_color = red
       config.gravity = true
-      config.texture = true
+      config.texture = false
       particles.new_system(x, y, config)
 
       -- Faster, smaller, purple to blue
       config = {}
       config.one_shot = true
-      config.max_particles = 200
+      config.max_particles = 400
       config.size = {min=1, max=1}
-      config.color = purple
-      config.end_color = blue
-      config.velocity = {min=50, max=200}
+      config.color = blue
+      config.end_color = red
+      config.velocity = {min=50, max=350}
       config.gravity = true
       particles.new_system(x, y, config)
 
@@ -153,10 +153,10 @@ function love.load()
       -- Ring
       config = {}
       config.one_shot = true
-      config.max_particles = 100
+      config.max_particles = 300
       config.size = {min=2, max=2}
       config.color = red
-      config.end_color = purple
+      config.end_color = orange
       config.velocity = {min=200, max=200}
       config.gravity = true
       particles.new_system(x, y, config)
@@ -218,6 +218,70 @@ function love.load()
       config.end_color = yellow
       config.velocity = {min=160, max=160}
       config.gravity = false
+      particles.new_system(x, y, config)
+    end
+  }, {
+    key="3",
+    description="preset",
+    control=function()
+      local x, y = love.mouse.getPosition()
+      local white = {255, 255, 255, 255}
+      local green = {0, 255, 40, 255}
+      local blue = {183, 213, 240, 255}
+      local orange = {255, 175, 64, 255}
+      local purple = {100, 10, 235, 255}
+      local red = {255, 0, 0, 255}
+      local yellow = {255, 255, 64, 255}
+      local config = {}
+
+      -- Puff
+      config = {}
+      config.max_particles = 50
+      config.size = {min=3, max=4}
+      config.velocity = {min=1, max=20}
+      config.lifespan = {min=1, max=1}
+      config.color = white
+      config.end_color = blue
+      config.gravity = true
+      config.one_shot = true
+      particles.new_system(x, y, config)
+
+      -- Jet
+      config = {}
+      config.one_shot = true
+      config.max_particles = 200
+      config.degrees = {min=269, max=271}
+      config.size = {min=1, max=1}
+      config.color = orange
+      config.end_color = red
+      config.lifespan = {min=1, max=2}
+      config.velocity = {min=1, max=800}
+      config.gravity = true
+      particles.new_system(x, y, config)
+
+      -- Inner
+      config = {}
+      config.max_particles = 100
+      config.velocity = {min=380, max=500}
+      config.lifespan = {min=1, max=1}
+      config.size = {min=2, max=5}
+      config.color = purple
+      config.end_color = green
+      config.one_shot = true
+      config.gravity = true
+      particles.new_system(x, y, config)
+
+      -- Ring.
+      config = {}
+      config.max_particles = 3000
+      config.rate = 300
+      config.velocity = {min=500, max=500}
+      config.lifespan = {min=1, max=1}
+      config.size = {min=3, max=3}
+      config.color = purple
+      config.end_color = green
+      config.one_shot = true
+      config.gravity = true
       particles.new_system(x, y, config)
     end
   }, {
