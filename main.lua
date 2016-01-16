@@ -19,6 +19,7 @@ config.one_shot = false
 config.degrees = {min=1, max=360}
 config.gravity = false
 config.lifespan = {min=1, max=4}
+config.velocity = {min=1, max=100}
 
 -- A utility function to copy tables
 function deepcopy(orig)
@@ -41,27 +42,59 @@ function love.load()
   controls = {{
     key="w",
     description="min angle -",
-    control=function() config.degrees.min = config.degrees.min - 10 end
+    control=function()
+      last.degrees.min = last.degrees.min - 10
+      config.degrees.min = config.degrees.min - 10
+    end
   }, {
     key="e",
     description="min angle +",
-    control=function() config.degrees.min = config.degrees.min + 10 end
+    control=function()
+      last.degrees.min = last.degrees.min + 10
+      config.degrees.min = config.degrees.min + 10
+    end
   }, {
     key="s",
     description="max angle -",
-    control=function() config.degrees.max = config.degrees.max - 10 end
+    control=function()
+      last.degrees.max = last.degrees.max - 10
+      config.degrees.max = config.degrees.max - 10
+    end
   }, {
     key="d",
     description="max angle +",
-    control=function() config.degrees.max = config.degrees.max + 10 end
+    control=function()
+      last.degrees.max = last.degrees.max + 10
+      config.degrees.max = config.degrees.max + 10
+    end
   }, {
     key="j",
     description="max particles -",
-    control=function() config.max_particles = config.max_particles - 20 end
+    control=function()
+      last.max_particles = last.max_particles - 20
+      config.max_particles = config.max_particles - 20
+    end
   }, {
     key="k",
     description="max particles +",
-    control=function() config.max_particles = config.max_particles + 20 end
+    control=function()
+      last.max_particles = last.max_particles + 20
+      config.max_particles = config.max_particles + 20
+    end
+  }, {
+    key="g",
+    description="max velocity -",
+    control=function()
+      last.velocity.max = last.velocity.max - 20
+      config.velocity.max = config.velocity.max - 20
+    end
+  }, {
+    key="h",
+    description="max particles +",
+    control=function()
+      last.velocity.max = last.velocity.max + 20
+      config.velocity.max = config.velocity.max + 20
+    end
   }, {
     key="m",
     description="emission rate +",
@@ -88,7 +121,11 @@ function love.load()
   }, {
     key="t",
     description="particle textures",
-    control=function() config.texture = not config.texture end
+    control=function()
+      local texture = not config.texture
+      last.texture = texture
+      config.texture = texture
+    end
   }, {
     key="y",
     description="burst",
@@ -328,6 +365,8 @@ function love.update(dt)
           d = string.format("%s [%s]", d, config.max_particles)
         elseif v.key == "s" then
           d = string.format("%s [%s]", d, config.degrees.max)
+        elseif v.key == "g" then
+          d = string.format("%s [%s]", d, config.velocity.max)
         elseif v.key == "r" then
           d = string.format("%s [%s]", d, config.gravity)
         elseif v.key == "p" then
