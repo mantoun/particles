@@ -90,7 +90,7 @@ function love.load()
     end
   }, {
     key="h",
-    description="max particles +",
+    description="max velocity +",
     control=function()
       last.velocity.max = last.velocity.max + 20
       config.velocity.max = config.velocity.max + 20
